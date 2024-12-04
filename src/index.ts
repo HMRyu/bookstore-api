@@ -8,42 +8,8 @@ app.use(express.json());
 
 // GET: 책 목록 조회 (필터 및 페이지네이션 지원)
 app.get('/api/books', async (req, res) => {
-  const { title, author, page = '1', pageSize = '10' } = req.query;
-
-  const filters: {
-    title?: { contains: string; mode: 'insensitive' };
-    author?: { contains: string; mode: 'insensitive' };
-  } = {};
-
-  if (title) {
-    filters.title = { contains: title as string, mode: 'insensitive' };
-  }
-  if (author) {
-    filters.author = { contains: author as string, mode: 'insensitive' };
-  }
-
-  const skip = (Number(page) - 1) * Number(pageSize);
-  const take = Number(pageSize);
-
-  try {
-    const books = await prisma.book.findMany({
-      where: filters,
-      skip,
-      take,
-    });
-    const totalBooks = await prisma.book.count({ where: filters });
-
-    res.json({
-      books,
-      pagination: {
-        currentPage: Number(page),
-        pageSize: Number(pageSize),
-        totalPages: Math.ceil(totalBooks / Number(pageSize)),
-      },
-    });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch books' });
-  }
+  const books = await prisma.book.findMany();
+  res.json(books);
 });
 
 // GET: 특정 책 상세 정보
