@@ -9,21 +9,38 @@ app.use(express.json());
 // GET: 책 목록 조회 (필터 및 페이지네이션 지원)
 app.get('/api/books', async (req, res) => {
   // 쿼리 파라미터에서 page와 pageSize를 받아옵니다. 기본값을 설정합니다.
-  const { page = '1', pageSize = '10' } = req.query;
+  const { page = '1', pageSize = '10', title, author } = req.query;
 
   // 페이지네이션을 위한 skip과 take 값을 계산합니다.
   const skip = (Number(page) - 1) * Number(pageSize); // 이전 페이지에 해당하는 책의 개수를 skip
   const take = Number(pageSize); // 한 페이지에 표시할 책의 개수
 
+  // 필터링 조건을 위한 객체를 초기화합니다.
+  const filters: {
+    title?: { contains: string; mode: 'insensitive' };
+    author?: { contains: string; mode: 'insensitive' };
+  } = {};
+
+  // title과 author가 쿼리 파라미터로 제공되면 filters 객체에 추가합니다.
+  if (title) {
+    filters.title = { contains: title as string, mode: 'insensitive' };
+  }
+  if (author) {
+    filters.author = { contains: author as string, mode: 'insensitive' };
+  }
+
   try {
     // Prisma에서 책 목록을 조회합니다.
     const books = await prisma.book.findMany({
+      where: filters, // 필터링 조건 추가
       skip, // 페이지네이션을 위해 skip 설정
       take, // 한 페이지에 표시할 책의 수
     });
 
     // 전체 책 수를 조회하여 페이지네이션 정보 제공
-    const totalBooks = await prisma.book.count();
+    const totalBooks = await prisma.book.count({
+      where: filters, // 필터링 조건에 맞는 책 수를 계산
+    });
 
     res.json({
       books, // 책 목록
