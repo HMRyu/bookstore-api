@@ -8,20 +8,13 @@ app.use(express.json());
 
 // GET: 책 목록 조회 (필터 및 페이지네이션 지원)
 app.get('/api/books', async (req, res) => {
-  // 쿼리 파라미터에서 page와 pageSize를 받아옵니다. 기본값을 설정합니다.
   const { page = '1', pageSize = '10', title, author } = req.query;
 
-  // 페이지네이션을 위한 skip과 take 값을 계산합니다.
-  const skip = (Number(page) - 1) * Number(pageSize); // 이전 페이지에 해당하는 책의 개수를 skip
-  const take = Number(pageSize); // 한 페이지에 표시할 책의 개수
-
-  // 필터링 조건을 위한 객체를 초기화합니다.
   const filters: {
     title?: { contains: string; mode: 'insensitive' };
     author?: { contains: string; mode: 'insensitive' };
   } = {};
 
-  // title과 author가 쿼리 파라미터로 제공되면 filters 객체에 추가합니다.
   if (title) {
     filters.title = { contains: title as string, mode: 'insensitive' };
   }
@@ -29,30 +22,34 @@ app.get('/api/books', async (req, res) => {
     filters.author = { contains: author as string, mode: 'insensitive' };
   }
 
-  try {
-    // Prisma에서 책 목록을 조회합니다.
-    const books = await prisma.book.findMany({
-      where: filters, // 필터링 조건 추가
-      skip, // 페이지네이션을 위해 skip 설정
-      take, // 한 페이지에 표시할 책의 수
-    });
+  const skip = (Number(page) - 1) * Number(pageSize);
+  const take = Number(pageSize);
 
-    // 전체 책 수를 조회하여 페이지네이션 정보 제공
-    const totalBooks = await prisma.book.count({
-      where: filters, // 필터링 조건에 맞는 책 수를 계산
+  try {
+    const books = await prisma.book.findMany({
+      where: filters,
+      skip,
+      take,
     });
+    const totalBooks = await prisma.book.count({ where: filters });
 
     res.json({
-      books, // 책 목록
-      pagination: {
-        currentPage: Number(page), // 현재 페이지 번호
-        pageSize: Number(pageSize), // 한 페이지에 표시할 책의 수
-        totalPages: Math.ceil(totalBooks / Number(pageSize)), // 전체 페이지 수
-        totalBooks, // 전체 책 수
+      success: true,
+      data: {
+        books,
+        pagination: {
+          currentPage: Number(page),
+          pageSize: Number(pageSize),
+          totalPages: Math.ceil(totalBooks / Number(pageSize)),
+          totalBooks,
+        },
       },
     });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch books' });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch books',
+    });
   }
 });
 
@@ -63,10 +60,22 @@ app.get('/api/books/:id', async (req, res) => {
     const book = await prisma.book.findUnique({
       where: { id },
     });
-    if (book) res.json(book);
-    else res.status(404).json({ error: 'Book not found' });
+    if (book) {
+      res.json({
+        success: true,
+        data: book,
+      });
+    } else {
+      res.status(404).json({
+        success: false,
+        error: 'Book not found',
+      });
+    }
   } catch (err) {
-    res.status(400).json({ error: 'Invalid ID format' });
+    res.status(400).json({
+      success: false,
+      error: 'Invalid ID format',
+    });
   }
 });
 
@@ -77,9 +86,15 @@ app.post('/api/books', async (req, res) => {
     const newBook = await prisma.book.create({
       data: { title, author, subject, quantity },
     });
-    res.status(201).json(newBook);
+    res.status(201).json({
+      success: true,
+      data: newBook,
+    });
   } catch (err) {
-    res.status(400).json({ error: 'Failed to create book' });
+    res.status(400).json({
+      success: false,
+      error: 'Failed to create book',
+    });
   }
 });
 
@@ -92,9 +107,15 @@ app.patch('/api/books/:id', async (req, res) => {
       where: { id },
       data,
     });
-    res.json(updatedBook);
+    res.json({
+      success: true,
+      data: updatedBook,
+    });
   } catch (err) {
-    res.status(404).json({ error: 'Book not found or invalid data' });
+    res.status(404).json({
+      success: false,
+      error: 'Book not found or invalid data',
+    });
   }
 });
 
@@ -103,9 +124,15 @@ app.delete('/api/books/:id', async (req, res) => {
   const { id } = req.params;
   try {
     await prisma.book.delete({ where: { id } });
-    res.status(204).send();
+    res.status(204).json({
+      success: true,
+      data: null,
+    });
   } catch (err) {
-    res.status(404).json({ error: 'Book not found' });
+    res.status(404).json({
+      success: false,
+      error: 'Book not found',
+    });
   }
 });
 
