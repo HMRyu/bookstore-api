@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 app.use(express.json());
 
 // GET: 책 목록 조회 (필터 및 페이지네이션 지원)
-app.get('/books', async (req, res) => {
+app.get('/api/books', async (req, res) => {
   const { title, author, page = '1', pageSize = '10' } = req.query;
 
   const filters: {
@@ -47,7 +47,7 @@ app.get('/books', async (req, res) => {
 });
 
 // GET: 특정 책 상세 정보
-app.get('/books/:id', async (req, res) => {
+app.get('/api/books/:id', async (req, res) => {
   const { id } = req.params;
   try {
     const book = await prisma.book.findUnique({
@@ -61,7 +61,7 @@ app.get('/books/:id', async (req, res) => {
 });
 
 // POST: 책 추가
-app.post('/books', async (req, res) => {
+app.post('/api/books', async (req, res) => {
   const { title, author, subject, quantity } = req.body;
   try {
     const newBook = await prisma.book.create({
@@ -74,7 +74,7 @@ app.post('/books', async (req, res) => {
 });
 
 // PATCH: 책 정보 수정
-app.patch('/books/:id', async (req, res) => {
+app.patch('/api/books/:id', async (req, res) => {
   const { id } = req.params;
   const data = req.body;
   try {
@@ -89,7 +89,7 @@ app.patch('/books/:id', async (req, res) => {
 });
 
 // DELETE: 책 삭제
-app.delete('/books/:id', async (req, res) => {
+app.delete('/api/books/:id', async (req, res) => {
   const { id } = req.params;
   try {
     await prisma.book.delete({ where: { id } });
