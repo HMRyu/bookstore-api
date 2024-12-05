@@ -8,7 +8,7 @@ app.use(express.json());
 
 // GET: 책 목록 조회 (필터 및 페이지네이션 지원)
 app.get('/api/books', async (req, res) => {
-  const { page = '1', pageSize = '10', title, author } = req.query;
+  const { title, author } = req.query;
 
   const filters: {
     title?: { contains: string; mode: 'insensitive' };
@@ -22,27 +22,15 @@ app.get('/api/books', async (req, res) => {
     filters.author = { contains: author as string, mode: 'insensitive' };
   }
 
-  const skip = (Number(page) - 1) * Number(pageSize);
-  const take = Number(pageSize);
-
   try {
     const books = await prisma.book.findMany({
       where: filters,
-      skip,
-      take,
     });
-    const totalBooks = await prisma.book.count({ where: filters });
 
     res.json({
       success: true,
       data: {
         books,
-        pagination: {
-          currentPage: Number(page),
-          pageSize: Number(pageSize),
-          totalPages: Math.ceil(totalBooks / Number(pageSize)),
-          totalBooks,
-        },
       },
     });
   } catch (err) {
